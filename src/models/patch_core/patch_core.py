@@ -166,16 +166,19 @@ class PatchCore:
         """最近傍法により各パッチの異常スコアを算出する
 
         Args:
-            embedding (Tensor): 特徴ベクトル
+            embedding (Tensor): 特徴ベクトル [N, n_features]
             n_neighbors (int): 最近傍のTop N個
 
         Returns:
-            Tensor: 各パッチの異常スコア
+            Tensor: 各パッチの異常スコア [N, top-k]
+
+        Note:
+            サンプルごとに総当りでユークリッド距離を算出し、サンプルごとにその中の最小n_neighbors個の距離を取得する
         """
         # メモリバンクと入力画像特徴のユークリッド距離を総当りで求める
         distances = torch.cdist(embedding, self.memory_bank, p=2.0)
 
-        # 求めた総当りのユークリッド距離の最小TopKを取得
+        # 求めた総当りのユークリッド距離の中からサンプルごとに最小n_neighbors個を取得
         patch_scores, _ = distances.topk(k=n_neighbors, largest=False, dim=1)
         return patch_scores
     
@@ -237,16 +240,33 @@ class PatchCore:
         """バリデーションエポック終了時処理
 
         Returns:
-            dict: 精度指標
+            dict: 精度指標のdictと標準化パラメータのdictのタプル
+        
+        Notes: 戻り値
+            # 精度指標
+            {
+                "auroc": AUROC
+                "precison": Precision
+                "recall": Recall
+                "f1_score": F1-score
+            }
+
+            # 標準化パラメータ
+            {
+                "threshould": 最良のしきい値（=一番F1-scoreの高いしきい値）
+                "min": 異常スコアの最小値
+                "max": 異常スコアの最大値
+            }
         """
-        # threshouldを算出
+        # 複数のしきい値でF1-scoreを求める
         precision, recall, thresoulds = self._precision_recall_curve.compute()
         f1_score = (2 * precision * recall) / (precision + recall + 1e-10)
 
+        # 一番精度の良い（=F1-scoreの高い）しきい値を求める
         best_index = torch.argmax(f1_score)
         self.thresould = thresoulds[best_index]
 
-        # metrics
+        # AUROCを求める
         auroc = self._auroc_metrics.compute()
         
         return ({
@@ -273,6 +293,7 @@ class PatchCore:
         # 異常スコアと異常マップを算出
         anomaly_map, anomaly_score = self.get_score(x)
 
+        # 異常スコアと異常マップを標準化
         if self.thresould is not None and self.min_value is not None and self.max_value is not None:
             self.bench['[predict] normalization'].start()
             anomaly_score = self._normalization(anomaly_score, self.thresould, self.min_value, self.max_value)
@@ -318,8 +339,6 @@ class PatchCore:
         embeddings = torch.vstack(embeddings)
 
         # 貪欲法で特徴量をサブサンプリングする
-        #sampler = KCenterGreedy(embedding=embeddings, sampling_ratio=self.coreset_sampling_ratio)
-        #coreset, n = sampler.sample_coreset()
         coreset, n = sampler.k_center_greedy(embeddings, sampling_ratio=self.coreset_sampling_ratio, progress=True)
         print(f"{len(embeddings)} -> {n}")
 
@@ -406,9 +425,17 @@ class PatchCore:
             max (float): 最大値
 
         Returns:
-            torch.Tensor: 標準化したベクトル
+            torch.Tensor: 標準化したベクトル（値範囲 0.0〜1.0）
+
+        Notes:
+            学習時にValidationデータで一番F1-scoreの高いしきい値と異常スコアの最大最小値を
+            標準化に使用するパラメータとして保存しておく。
+            それらのパラメータを使い、正常・異常の境界しきい値が0.5にくるように標準化を行う。
         """
+        # 標準化
         norm = ((x - thresould) / (max - min)) + 0.5
+
+        # 値範囲 0.0〜1.0でCLIP
         norm = torch.minimum(norm, torch.tensor(1))
         norm = torch.maximum(norm, torch.tensor(0))
 

@@ -34,15 +34,17 @@ def test(
         all_preds.append(result)
         all_labes.extend(label)
 
-    # metrics
+    # 精度指標を計算
     precision = metrics.precision_score(all_labes, all_preds, average=None)
     recall = metrics.recall_score(all_labes, all_preds, average=None)
     f1_score = metrics.f1_score(all_labes, all_preds, average=None)
 
+    # 精度指標のマクロ平均を算出
     macro_precision = metrics.precision_score(all_labes, all_preds, average='macro')
     macro_recall = metrics.recall_score(all_labes, all_preds, average='macro')
     macro_f1_score = metrics.f1_score(all_labes, all_preds, average='macro')
 
+    # コンフュージョンマトリックスを作成
     cm = metrics.confusion_matrix(all_labes, all_preds)
 
     # 結果表示

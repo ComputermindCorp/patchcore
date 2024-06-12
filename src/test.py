@@ -15,7 +15,6 @@ from models.patch_core import PatchCore
 from common.pytorch_custom_dataset import ImagePathes
 from common.benchmark import Benchmark
 from models.patch_core import visualize
-from common import preprocess
 
 def write_csv(
         save_path: str,
@@ -31,6 +30,22 @@ def write_csv(
         cm: list,
         encoding: str='shift_jis',
     ):
+    """csvファイルを作成・保存
+
+    Args:
+        save_path (str): 保存先パス
+        csv_results (list): csvに書き込むデータ
+        cfg (omegaconf.dictconfig.DictConfig): 設定ファイルオブジェクト
+        net (PatchCore): PatchCoreオブジェクト
+        precision (list[float]): Precision(正常・異常各クラス)
+        recall (list[float]): Recall(正常・異常各クラス)
+        f1_score (list[float]): F1-score(正常・異常各クラス)
+        macro_precision (float): Precision（マクロ平均）
+        macro_recall (float): Recall（マクロ平均）
+        macro_f1_score (float): F1-score（マクロ平均）
+        cm (list): コンフュージョンマトリックス
+        encoding (str, optional): csvファイルのテキストエンコーディング. Defaults to 'shift_jis'.
+    """
 
     with open(save_path, 'w', encoding=encoding) as f:
         writer = csv.writer(f, lineterminator='\n')
@@ -123,6 +138,7 @@ def test(
     # PatchCoreモデル
     net = PatchCore.load_weights(cfg.weights_path, cfg.device)
 
+    # ベンチマーク設定
     net._enable_bench()
 
     if visible_bench:
@@ -208,7 +224,7 @@ def test(
                     cv2.imwrite(str(ng_output_path / heatmap_save_path.name), im_ng_heatmap)
                     cv2.imwrite(str(ng_output_path / heatmap_add_save_path.name), im_ng_add)
 
-    # metrics
+    # 精度指標
     precision = metrics.precision_score(all_labes, all_preds, average=None)
     recall = metrics.recall_score(all_labes, all_preds, average=None)
     f1_score = metrics.f1_score(all_labes, all_preds, average=None)
