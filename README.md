@@ -58,3 +58,20 @@ python test.py cfg/test/wide_resnet50_wood.yaml
 ```
 
 [test config file document](src/cfg/test/README.md)
+
+## Sample dataset 
+
+* backborn Wide-ResNet50
+* 
+
+|| Precision | Recall | F1-score |
+|---|---|---|---|
+| Normal | 0.8889 | 1.0000 | 0.9412 |
+| Abnormal | 1.0000 | 0.8750 | 0.9333 |
+| macro-mean | 0.9444 | 0.9375 | 0.9373 |
+
+<img src="data/sample01.png" width="800">
+
+<img src="data/sample02.png" width="800">
+
+<img src="data/sample03.png" width="800">
