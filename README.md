@@ -2,7 +2,16 @@
 Implementation of anomaly detection method PatchCore
 
 ## Installation
-### docker
+### Local
+* torch==1.13
+* torchvision==0.14
+* opencv-python
+* scikit-learn
+* torchmetrics==0.9.0
+* omegaconf
+* tqdm
+
+### Docker
 #### GPU
 ```bash
 source setting/init_docker.sh
@@ -15,7 +24,7 @@ source setting/init_docker.sh
 ./build.cpu
 ```
 
-#### login container
+#### Login container
 ##### GPU
 ```bash
 ./login
@@ -41,7 +50,11 @@ src/data/images/wood/
 python train.py cfg/train/wide_resnet50_wood.yaml
 ```
 
+[train config file document](src/cfg/train/README.md)
+
 ## Test
 ```
 python test.py cfg/test/wide_resnet50_wood.yaml
 ```
+
+[test config file document](src/cfg/test/README.md)
