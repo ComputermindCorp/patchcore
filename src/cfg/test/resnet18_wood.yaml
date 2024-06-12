@@ -1,0 +1,15 @@
+device: 
+weights_path: ./data/weights/resnet18_size224_param_0.1_9.pth
+th: 0.5
+
+test_data_pathes:
+ - ./data/images/wood/test/OK
+ - ./data/images/wood/test/NG
+
+labels: [0, 1]
+
+output_root_path: 
+  ./data/output/resnet18
+
+heatmap:
+  ng_dir: True

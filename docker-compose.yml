@@ -1,0 +1,19 @@
+services:
+  patch_core:
+    build: ./docker/cuda
+    container_name: patch_core
+    volumes:
+      - ./src:/src
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - XDG_CACHE_HOME=./data/weights/download
+      - DISPLAY=${DISPLAY}
+    command: bash
+    user: ${UID:?please excute "source setting/init_docker_xxx.sh".}:${GID:?please excute "source setting/init_docker_xxx.sh".}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
