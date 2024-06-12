@@ -14,6 +14,11 @@ https://arxiv.org/abs/2106.08265
 * tqdm
 
 ### Docker
+
+* docker 
+* NVIDIA Container Toolkit
+* docker-compose
+
 #### GPU
 ```bash
 source setting/init_docker.sh
