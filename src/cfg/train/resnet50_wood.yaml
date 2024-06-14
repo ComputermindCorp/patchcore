@@ -3,7 +3,7 @@ num_neighbors: 9
 input_size: [224, 224]
 backborn_id: resnet50
 device:
-batch_size: 32
+batch_size: 8
 
 train:
   data_pathes:

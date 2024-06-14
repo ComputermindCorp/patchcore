@@ -11,7 +11,7 @@ def compute_anomaly_map(
     """異常マップと異常スコアを算出する
 
     Args:
-        patch_scores (torch.Tensor): 入力特徴ベクトルとメモリバンクの距離の行列 [N, top-k]
+        patch_scores (torch.Tensor): 入力特徴ベクトルとメモリバンクの距離の行列 [n_features, top-k]
         feature_map_shape (torch.Size): 特徴ベクトルのshape
         input_size (tuple[int, int]): 入力画像サイズ
 

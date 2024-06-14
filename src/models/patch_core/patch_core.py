@@ -29,7 +29,7 @@ class PatchCore:
         Args:
             device (str | None): デバイスID(Noneの場合は自動設定)
             input_size (tuple[int, int]): 入力サイズ
-            backborn_id (str, optional): 特徴量抽出モデルID. Defaults to "wide_resnet50".
+            backborn_id (str, optional): 特徴ベクトル抽出モデルID. Defaults to "wide_resnet50".
             coreset_sampling_ratio (float, optional): コアセットサンプリング比率. Defaults to 0.1.
             num_neighbors (int, optional): 近傍法の抽出数. Defaults to 9.
         """
@@ -45,6 +45,8 @@ class PatchCore:
             "[predict] total",
         ], enable=False, visible=False, except_first=True)
 
+        self.pooling = torch.nn.AvgPool2d(3, 1, 1)
+
     def _initialize(self,
                 device: str | None,
                 input_size: tuple[int, int],
@@ -57,7 +59,7 @@ class PatchCore:
         Args:
             device (str | None): デバイスID(Noneの場合は自動設定)
             input_size (tuple[int, int]): 入力サイズ
-            backborn_id (str, optional): 特徴量抽出モデルID. Defaults to "wide_resnet50".
+            backborn_id (str, optional): 特徴ベクトル抽出モデルID. Defaults to "wide_resnet50".
             coreset_sampling_ratio (float, optional): コアセットサンプリング比率. Defaults to 0.1.
             num_neighbors (int, optional): 近傍法の抽出数. Defaults to 9.
         """
@@ -74,14 +76,16 @@ class PatchCore:
         self.min_value = None
         self.max_value = None
 
+        self.n_train = None
+
         if backborn_id != "":
             self._set_backborn(backborn_id)
 
     def _set_backborn(self, backborn_id: str):
-        """特徴量抽出モデルを設定
+        """特徴ベクトル抽出モデルを設定
 
         Args:
-            backborn_id (str): 特徴量抽出モデルID
+            backborn_id (str): 特徴ベクトル抽出モデルID
 
         """
         if backborn_id not in backborn_list.keys():
@@ -107,10 +111,10 @@ class PatchCore:
         return self.backborn.patch_size
     
     def _get_feature_size(self) -> dict:
-        """特徴量サイズを取得（内部使用用）
+        """特徴ベクトルサイズを取得（内部使用用）
 
         Returns:
-            dict: 特徴量サイズ情報
+            dict: 特徴ベクトルサイズ情報
         """
         x = torch.zeros((1, 3, self.input_size[0], self.input_size[1])).to(self.device)
         features = self.backborn.get_features(x)
@@ -128,12 +132,12 @@ class PatchCore:
         """
         # 特徴ベクトルを抽出
         self.bench["[predict] get_features"].start()
-        features = self.backborn.get_features(x)
+        features = self.backborn.get_features(x) 
         self.bench["[predict] get_features"].show()
 
         # Average Pooling
         self.bench["[predict] average_pooling"].start()
-        features = { layer: torch.nn.AvgPool2d(3, 1, 1)(feature) for layer, feature in features.items() }
+        features = { layer: self.pooling(feature) for layer, feature in features.items() }
         self.bench["[predict] average_pooling"].show()
 
         #for k, v in features.items():
@@ -141,15 +145,14 @@ class PatchCore:
         
         # 複数レイヤーの特徴ベクトルを統合しリサイズする
         self.bench["[predict] resize"].start()
-        embedding = self._generate_embedding(features)
-        feature_map_shape = embedding.shape[-2:]
-        embedding = self._reshape_embedding(embedding)
-
+        features = self._concat_features(features) # (N, C, H, W)
+        feature_map_shape = features.shape[-2:]
+        features = self._reshape_features(features) # (N*H*W, C)
         self.bench["[predict] resize"].show()
 
         # 近傍法でスコアを算出
         self.bench["[predict] nearest_neighbors"].start()
-        patch_scores = self._nearest_neighbors(embedding=embedding, n_neighbors=self.num_neighbors)
+        patch_scores = self._nearest_neighbors(features=features, n_neighbors=self.num_neighbors) # (N*H*W, num_neighbors)
         self.bench["[predict] nearest_neighbors"].show()
 
         self.bench["[predict] anomaly_map_generator"].start()
@@ -162,21 +165,21 @@ class PatchCore:
 
         return anomaly_map, anomaly_score
     
-    def _nearest_neighbors(self, embedding: torch.Tensor, n_neighbors: int=9) -> torch.Tensor:
+    def _nearest_neighbors(self, features: torch.Tensor, n_neighbors: int=9) -> torch.Tensor:
         """最近傍法により各パッチの異常スコアを算出する
 
         Args:
-            embedding (Tensor): 特徴ベクトル [N, n_features]
-            n_neighbors (int): 最近傍のTop N個
+            features (Tensor): 特徴ベクトル (N*H*W, C)
+            n_neighbors (int): 取得する最近傍のTop N個
 
         Returns:
-            Tensor: 各パッチの異常スコア [N, top-k]
+            Tensor: 各パッチの異常スコア [N*H*W, top-k]
 
         Note:
             サンプルごとに総当りでユークリッド距離を算出し、サンプルごとにその中の最小n_neighbors個の距離を取得する
         """
         # メモリバンクと入力画像特徴のユークリッド距離を総当りで求める
-        distances = torch.cdist(embedding, self.memory_bank, p=2.0)
+        distances = torch.cdist(features, self.memory_bank, p=2.0)
 
         # 求めた総当りのユークリッド距離の中からサンプルごとに最小n_neighbors個を取得
         patch_scores, _ = distances.topk(k=n_neighbors, largest=False, dim=1)
@@ -196,19 +199,21 @@ class PatchCore:
         x = x.to(self.device)
 
         # 特徴ベクトルを抽出する
-        embedding = self.get_features(x)
+        embedding = self.get_features(x) # { "layer-name": torch.Tensro(N, C, H, W), ... }
         self.embeddings.append(embedding)
 
     def train_epoch_end(self):
         """学習エポック終了時処理
         """
-        # 特徴量を貪欲法でサブサンプリングする
-        self.sub_sampling(self.embeddings)
+        # Trainデータ数を保存
+        self.n_train = torch.vstack(self.embeddings).shape[0] // (self.patch_size * self.patch_size)
+
+        # 特徴ベクトルを貪欲法でサブサンプリングする
+        self.sub_sampling(self.embeddings) # (N*H*W, C) -> (n_subsample, C)
 
     def validation_init(self):
         """バリデーション初期化処理
         """
-        self.outputs = []
         self.min_value = torch.tensor(float("inf"))
         self.max_value = torch.tensor(float("-inf"))
         self._precision_recall_curve = PrecisionRecallCurve(num_classes=1)
@@ -321,31 +326,35 @@ class PatchCore:
         features = self.backborn.get_features(x)
 
         # Average Poolin
-        features = { layer: torch.nn.AvgPool2d(3, 1, 1)(feature) for layer, feature in features.items() }
+        # {
+        #    "layer-name": torch.Tensor (N, C, H, W)
+        # }
+        features = { layer: self.pooling(feature) for layer, feature in features.items() }
         
         # 複数レイヤーの特徴ベクトルを統合しリサイズする
-        embedding = self._generate_embedding(features)
-        embedding = self._reshape_embedding(embedding)
+        embedding = self._concat_features(features) # (N, C, H, W)
+        embedding = self._reshape_features(embedding) # (N*H*W, C)
 
         return embedding
     
-    def sub_sampling(self, embeddings: torch.Tensor):
-        """特徴量のサブサンプリングを行う
+    def sub_sampling(self, embeddings: list[torch.Tensor]):
+        """特徴ベクトルのサブサンプリングを行う
 
         Args:
-            embeddings (torch.Tensor): 特徴ベクトル
+            embeddings (list[torch.Tensor]): 特徴ベクトル (B*H*W, C)のリスト
         """
-        # 特徴量を連結
-        embeddings = torch.vstack(embeddings)
+        # 特徴ベクトルListをtorch.Tensor化
+        embeddings = torch.vstack(embeddings) # (N*H*W, C)
 
-        # 貪欲法で特徴量をサブサンプリングする
+        # 貪欲法で特徴ベクトルをサブサンプリングする
+        # (N*H*W, C) -> (n_subsample, C)
         coreset, n = sampler.k_center_greedy(embeddings, sampling_ratio=self.coreset_sampling_ratio, progress=True)
         print(f"{len(embeddings)} -> {n}")
 
-        # サブサンプリングした特徴量を格納
+        # サブサンプリングした特徴ベクトルを格納
         self.memory_bank = coreset
     
-    def _generate_embedding(self, features: dict[str, torch.Tensor]) -> torch.Tensor:
+    def _concat_features(self, features: dict[str, torch.Tensor]) -> torch.Tensor:
         """複数レイヤーのサイズの異なる特徴ベクトルを統合する
 
         Args:
@@ -370,8 +379,8 @@ class PatchCore:
         return embeddings
     
     @staticmethod
-    def _reshape_embedding(embedding: torch.Tensor) -> torch.Tensor:
-        """特徴量のリシェイプ
+    def _reshape_features(embedding: torch.Tensor) -> torch.Tensor:
+        """特徴ベクトルのリシェイプ
 
         Args:
             embedding (Tensor): 特徴ベクトル
@@ -381,7 +390,7 @@ class PatchCore:
             torch.Tensor: リシェイプした特徴ベクトル.
         
         Note:
-            [N, Embedding, Patch, Patch] -> [N*Patch*Patch, Embedding]
+            [N, C, H, W] -> [N*H*W, C]
         """
         embedding_size = embedding.size(1)
         embedding = embedding.permute(0, 2, 3, 1).reshape(-1, embedding_size)
@@ -457,17 +466,22 @@ class PatchCore:
             "input_size": self.input_size,
             "memory_bank": self.memory_bank,
             "layers": self.layers,
+            "n_train": self.n_train,
         },
             path
         )
 
     @staticmethod
-    def load_weights(path: str, device: str) -> PatchCore:
+    def load_weights(path: str, device: str | None=None) -> PatchCore:
         """重みファイルをロードする
 
         Args:
             path (str): 重みファイルのパス
+            device (str | None): デバイス. Noneのときは自動選択. Defaults to None.
         """
+        if device is None:
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+        
         net = PatchCore(device, backborn_id="", input_size=(224, 224)) # backborn_id, input_sizeはダミー
 
         w = torch.load(path, map_location=torch.device(net.device))
@@ -484,6 +498,8 @@ class PatchCore:
         net.min_value = w['min_value']
         net.max_value = w['max_value']
         net.memory_bank = w['memory_bank']
+
+        net.n_train = w['n_train']
 
         return net
 

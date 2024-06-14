@@ -5,6 +5,10 @@ https://arxiv.org/abs/2106.08265
 
 ## Installation
 ### Local
+* Ubuntu20.04, 22.04
+* Python 3.8
+
+### Python package
 * torch==1.13
 * torchvision==0.14
 * opencv-python
@@ -43,13 +47,16 @@ source setting/init_docker.sh
 ```
 
 ## Sample dataset
-sample dataset here
+sample dataset [`Download`](https://www.compmind.co.jp/)
 
 ```
 src/data/images/wood/
   train/
+    image_file...
   val/
+    image_file...
   test/
+    image_file...
 ```
 
 ## Training
@@ -68,7 +75,7 @@ python test.py cfg/test/wide_resnet50_wood.yaml
 
 ## Evaluation results for sample data
 
-### parameter
+### Parameter
 | | |
 |--|--|
 |backborn | Wide-ResNet50 |
@@ -76,22 +83,27 @@ python test.py cfg/test/wide_resnet50_wood.yaml
 | num_neighbors | 9 |
 
 
-### metrics 
+### Metrics 
 || Precision | Recall | F1-score |
 |---|---|---|---|
 | Normal | 0.8889 | 1.0000 | 0.9412 |
 | Abnormal | 1.0000 | 0.8750 | 0.9333 |
 | macro-mean | 0.9444 | 0.9375 | 0.9373 |
 
-### confusion matrix
+### Confusion matrix
 | Label / Pred | Normal | Abnormal |
 | --- | --- | --- |
 | Normal | 16 | 0 |
 | Abnormal | 2 | 14 |
 
-### result image
+### Result image
 <img src="data/sample01.png" width="800">
 
 <img src="data/sample02.png" width="800">
 
 <img src="data/sample03.png" width="800">
+
+## License
+
+[Apache-2.0 license](./LICENSE).
+

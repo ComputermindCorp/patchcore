@@ -258,6 +258,7 @@ def test(
             csv_results,
             cfg,
             net,
+            th,
             precision,
             recall,
             f1_score,
