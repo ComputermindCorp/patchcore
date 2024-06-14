@@ -21,6 +21,7 @@ def write_csv(
         csv_results: list,
         cfg: omegaconf.dictconfig.DictConfig,
         net: PatchCore,
+        th: float,
         precision: list[float],
         recall: list[float],
         f1_score: list[float],
@@ -37,6 +38,7 @@ def write_csv(
         csv_results (list): csvに書き込むデータ
         cfg (omegaconf.dictconfig.DictConfig): 設定ファイルオブジェクト
         net (PatchCore): PatchCoreオブジェクト
+        th (float): しきい値
         precision (list[float]): Precision(正常・異常各クラス)
         recall (list[float]): Recall(正常・異常各クラス)
         f1_score (list[float]): F1-score(正常・異常各クラス)
@@ -64,7 +66,7 @@ def write_csv(
         data.append([])
 
         # テスト条件
-        data.append(["threshould", cfg.th])
+        data.append(["threshould", th])
         data.append([])
 
         # 精度指標
@@ -180,9 +182,12 @@ def test(
             ng_output_path = output_heatmap_root_path / "NG"
             ng_output_path.mkdir(exist_ok=True, parents=True)
 
+    # しきい値
+    th = 0.5 if cfg.th is None else cfg.th
+
     # テスト
     for i, (x, label, pathes) in enumerate(test_loader):
-        anomaly_score, anomaly_map_org, pred = net.predict(x, th=cfg.th)
+        anomaly_score, anomaly_map_org, pred = net.predict(x, th=th)
         anomaly_map = copy.deepcopy(anomaly_map_org)
 
         label = label.tolist()
