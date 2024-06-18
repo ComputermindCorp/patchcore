@@ -3,4 +3,5 @@ scikit-learn==1.2.2
 torchmetrics==0.9.0
 #torchmetrics==0.11.4
 omegaconf==2.3.0
-tqdm
+tqdm>=4.42
+matplotlib
