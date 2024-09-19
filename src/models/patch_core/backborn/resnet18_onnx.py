@@ -10,7 +10,7 @@ class ResNet18_ONNX(BackbornBase):
     def __init__(self, device):
         super().__init__(device)
 
-        self.model = onnxruntime.InferenceSession('models/patch_core/backborn/resnet18_features.onnx')
+        self.model = onnxruntime.InferenceSession('models/patch_core/backborn/model/resnet18_features.onnx')
         self.layers = ['layer2', 'layer3']
         self.patch_size = 28
         # layer2: [1, 128, 28, 28]
