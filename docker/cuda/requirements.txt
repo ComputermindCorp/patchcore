@@ -5,3 +5,4 @@ torchmetrics==0.9.0
 omegaconf==2.3.0
 numpy==1.26.4
 matplotlib
+onnxruntime==1.19.2

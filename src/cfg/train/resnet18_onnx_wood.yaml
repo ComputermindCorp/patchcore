@@ -1,0 +1,31 @@
+coreset_sampling_ratio: 0.1
+num_neighbors: 9
+input_size: [224, 224]
+backborn_id: resnet18_onnx
+device:
+batch_size: 1
+
+train:
+  data_paths:
+    - ./data/images/wood/train/OK
+
+val:
+  data_paths:
+    - ./data/images/wood/val/OK
+    - ./data/images/wood/val/NG
+
+  labels: [0, 1]
+
+test:
+  enable: True
+  data_paths:
+  - ./data/images/wood/test/OK
+  - ./data/images/wood/test/NG
+
+  labels: [0, 1]
+
+save_weights_root_path: ./data/weights/
+
+auto_save_weights_path: True
+save_weights_path_suffix: wood
+save_weights_filename: 
