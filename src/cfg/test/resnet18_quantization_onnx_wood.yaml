@@ -9,7 +9,7 @@ test_data_pathes:
 labels: [0, 1]
 
 output_root_path: 
-  ./data/output/resnet18_onnx
+  ./data/output/resnet18_onnx_quantization
 
 heatmap:
   ng_dir: True
