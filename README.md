@@ -47,7 +47,12 @@ source setting/init_docker.sh
 ```
 
 ## Sample dataset
-sample dataset [`Download`](https://www.compmind.co.jp/)
+download sample dataset.
+```bash
+cd data/images
+wget https://github.com/ComputermindCorp/assets/releases/download/v1.0.0/wood.zip
+unzip wood.zip
+```
 
 ```
 src/data/images/wood/
@@ -58,6 +63,8 @@ src/data/images/wood/
   test/
     image_file...
 ```
+
+sample dataset is [here](https://github.com/ComputermindCorp/assets/releases/download/v1.0.0/wood.zip).
 
 ## Training
 ```

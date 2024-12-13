@@ -4,6 +4,8 @@ ENV TZ=Asia/Tokyo
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 RUN apt-get update && apt-get install -y libgl1-mesa-dev \
+wget \
+unzip \
 libgtk2.0-dev
 
 RUN mkdir /code
