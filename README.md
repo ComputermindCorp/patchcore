@@ -1,5 +1,5 @@
 # patchcore
-Implementation of anomaly detection method PatchCore
+Implementation of anomaly detection method PatchCore.
 
 https://arxiv.org/abs/2106.08265
 
@@ -56,12 +56,12 @@ unzip wood.zip
 
 ```
 src/data/images/wood/
-  train/
-    image_file...
-  val/
-    image_file...
-  test/
-    image_file...
+├── train/
+│   └── image_file...
+├── val/
+│   └── image_file...
+└── test/
+    └── image_file...
 ```
 
 sample dataset is [here](https://github.com/ComputermindCorp/assets/releases/download/v1.0.0/wood.zip).
@@ -79,6 +79,19 @@ python test.py cfg/test/wide_resnet50_wood.yaml
 ```
 
 [test config file document](src/cfg/test/README.md)
+
+
+### trained model
+* [`wide_resnet50_size224_param_0.1_9_wood.pth`](https://github.com/ComputermindCorp/assets/releases/download/v1.0.0/wide_resnet50_size224_param_0.1_9_wood.pth)
+* [`resnet50_size224_param_0.1_9_wood.pth`](https://github.com/ComputermindCorp/assets/releases/download/v1.0.0/resnet50_size224_param_0.1_9_wood.pth)
+* [`resnet18_size224_param_0.1_9_wood.pth`](https://github.com/ComputermindCorp/assets/releases/download/v1.0.0/resnet18_size224_param_0.1_9_wood.pth)
+
+```
+src/data/weights/
+├── resnet18_size224_param_0.1_9_wood.pth
+├── resnet50_size224_param_0.1_9_wood.pth
+└── wide_resnet50_size224_param_0.1_9_wood.pth
+```
 
 ## Evaluation results for sample data
 

@@ -12,7 +12,7 @@ from sklearn import metrics
 import copy
 
 from models.patch_core import PatchCore
-from common.pytorch_custom_dataset import ImagePathes
+from common.pytorch_custom_dataset import ImagePaths
 from common.benchmark import Benchmark
 from models.patch_core import visualize
 
@@ -148,8 +148,8 @@ def test(
 
     # データローダー
     # dataset
-    test_dataset = ImagePathes.create_from_root_pathes(
-        cfg.test_data_pathes,
+    test_dataset = ImagePaths.create_from_root_paths(
+        cfg.test_data_paths,
         label_list=cfg.labels,
         transform = net.get_transform(),
         resize=net.get_resize(),
@@ -186,7 +186,7 @@ def test(
     th = 0.5 if cfg.th is None else cfg.th
 
     # テスト
-    for i, (x, label, pathes) in enumerate(test_loader):
+    for i, (x, label, paths) in enumerate(test_loader):
         anomaly_score, anomaly_map_org, pred = net.predict(x, th=th)
         anomaly_map = copy.deepcopy(anomaly_map_org)
 
@@ -198,7 +198,7 @@ def test(
         # 結果出力
         if output_root_path is not None:
             # csv
-            csv_result = [i+1, Path(pathes[0]).name]
+            csv_result = [i+1, Path(paths[0]).name]
             csv_result.extend(label)
             csv_result.append(pred)
 
@@ -209,11 +209,11 @@ def test(
 
             # heatmap画像生成・保存
             if output_heatmap_root_path is not None:
-                heatmap_save_path = output_heatmap_root_path / f"{Path(pathes[0]).stem}_heatmap.png"
-                heatmap_add_save_path = output_heatmap_root_path / f"{Path(pathes[0]).stem}.png"
+                heatmap_save_path = output_heatmap_root_path / f"{Path(paths[0]).stem}_heatmap.png"
+                heatmap_add_save_path = output_heatmap_root_path / f"{Path(paths[0]).stem}.png"
                 heatmap_color_bar = output_heatmap_root_path / "color_bar.png"
 
-                im_org = cv2.imread(pathes[0])
+                im_org = cv2.imread(paths[0])
 
                 im_heatmap = visualize.create_heatmap_image(anomaly_map, org_size=im_org.shape)
 

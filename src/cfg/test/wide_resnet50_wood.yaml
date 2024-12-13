@@ -1,8 +1,8 @@
 device: 
-weights_path: ./data/weights/wide_resnet50_size224_param_0.1_9.pth
+weights_path: ./data/weights/wide_resnet50_size224_param_0.1_9_wood.pth
 th: 0.5
 
-test_data_pathes:
+test_data_paths:
  - ./data/images/wood/test/OK
  - ./data/images/wood/test/NG
 

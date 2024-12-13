@@ -8,25 +8,25 @@ from omegaconf import OmegaConf
 import torch
 from torch.utils.data import DataLoader
 
-from common.pytorch_custom_dataset import ImagePathes
+from common.pytorch_custom_dataset import ImagePaths
 from models.patch_core import PatchCore
 from models.patch_core import test_module
 
-def check_input_pathes(pathes: list[str], data_name: str):
+def check_input_paths(paths: list[str], data_name: str):
     """ファイルパスリストのチェック
 
     Args:
-        pathes (list[str]): 対象ディレクトリパスのリスト
+        paths (list[str]): 対象ディレクトリパスのリスト
         data_name (str): 各ディレクトリパスの名称
 
     Raises:
         ValueError: ファイルパスが1つもない場合にスロー
         FileNotFoundError: ファイルが存在しない場合にスロー
     """
-    if len(pathes) < 1:
+    if len(paths) < 1:
         raise ValueError(f"no {data_name}.")
 
-    for path in pathes:
+    for path in paths:
         print(path)
         if not Path(path).exists():
             raise FileNotFoundError(f"file or directory not found. {path}")
@@ -38,8 +38,8 @@ def train(cfg: omegaconf.dictconfig.DictConfig):
         cfg (omegaconf.dictconfig.DictConfig): 設定情報
     """
     # 入力ファイルチェック
-    check_input_pathes(cfg.train.data_pathes, "train data")
-    check_input_pathes(cfg.val.data_pathes, "validation data")
+    check_input_paths(cfg.train.data_paths, "train data")
+    check_input_paths(cfg.val.data_paths, "validation data")
 
     # 重み保存ファイルパスの設定
     if cfg.auto_save_weights_path:
@@ -67,8 +67,8 @@ def train(cfg: omegaconf.dictconfig.DictConfig):
     )
 
     # データローダー（Trainデータ）
-    train_dataset = ImagePathes.create_from_root_pathes(
-        cfg.train.data_pathes,
+    train_dataset = ImagePaths.create_from_root_paths(
+        cfg.train.data_paths,
         label_list=None,
         transform = net.get_transform(),
         resize=net.get_resize(),
@@ -80,8 +80,8 @@ def train(cfg: omegaconf.dictconfig.DictConfig):
     )
 
     # データローダー（Valデータ）
-    val_dataset = ImagePathes.create_from_root_pathes(
-        cfg.val.data_pathes,
+    val_dataset = ImagePaths.create_from_root_paths(
+        cfg.val.data_paths,
         label_list=cfg.val.labels,
         transform = net.get_transform(),
         resize=net.get_resize(),
@@ -93,11 +93,11 @@ def train(cfg: omegaconf.dictconfig.DictConfig):
     )
 
     # データローダー（Testデータ）
-    print(cfg.test.data_pathes)
+    print(cfg.test.data_paths)
     if cfg.test.enable:
-        if cfg.test.data_pathes is not None and len(cfg.test.data_pathes) > 0:
-            test_dataset = ImagePathes.create_from_root_pathes(
-                cfg.test.data_pathes,
+        if cfg.test.data_paths is not None and len(cfg.test.data_paths) > 0:
+            test_dataset = ImagePaths.create_from_root_paths(
+                cfg.test.data_paths,
                 label_list=cfg.test.labels,
                 transform = net.get_transform(),
                 resize=net.get_resize(),

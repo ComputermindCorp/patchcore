@@ -188,7 +188,7 @@ class PatchCore:
     def train_init(self):
         """学習初期化処理
         """
-        self.embeddings = []
+        self.features = []
 
     def train_step(self, x: torch.Tensor):
         """学習ステップ処理
@@ -199,17 +199,17 @@ class PatchCore:
         x = x.to(self.device)
 
         # 特徴ベクトルを抽出する
-        embedding = self.get_features(x) # { "layer-name": torch.Tensro(N, C, H, W), ... }
-        self.embeddings.append(embedding)
+        _features = self.get_features(x) # { "layer-name": torch.Tensro(N, C, H, W), ... }
+        self.features.append(_features)
 
     def train_epoch_end(self):
         """学習エポック終了時処理
         """
         # Trainデータ数を保存
-        self.n_train = torch.vstack(self.embeddings).shape[0] // (self.patch_size * self.patch_size)
+        self.n_train = torch.vstack(self.features).shape[0] // (self.patch_size * self.patch_size)
 
         # 特徴ベクトルを貪欲法でサブサンプリングする
-        self.sub_sampling(self.embeddings) # (N*H*W, C) -> (n_subsample, C)
+        self.sub_sampling(self.features) # (N*H*W, C) -> (n_subsample, C)
 
     def validation_init(self):
         """バリデーション初期化処理
@@ -269,7 +269,11 @@ class PatchCore:
 
         # 一番精度の良い（=F1-scoreの高い）しきい値を求める
         best_index = torch.argmax(f1_score)
-        self.thresould = thresoulds[best_index]
+
+        if thresoulds.dim() == 0:
+            self.thresould = thresoulds
+        else:
+            self.thresould = thresoulds[best_index]
 
         # AUROCを求める
         auroc = self._auroc_metrics.compute()
@@ -332,24 +336,24 @@ class PatchCore:
         features = { layer: self.pooling(feature) for layer, feature in features.items() }
         
         # 複数レイヤーの特徴ベクトルを統合しリサイズする
-        embedding = self._concat_features(features) # (N, C, H, W)
-        embedding = self._reshape_features(embedding) # (N*H*W, C)
+        features = self._concat_features(features) # (N, C, H, W)
+        features = self._reshape_features(features) # (N*H*W, C)
 
-        return embedding
+        return features
     
-    def sub_sampling(self, embeddings: list[torch.Tensor]):
+    def sub_sampling(self, features: list[torch.Tensor]):
         """特徴ベクトルのサブサンプリングを行う
 
         Args:
-            embeddings (list[torch.Tensor]): 特徴ベクトル (B*H*W, C)のリスト
+            features (list[torch.Tensor]): 特徴ベクトル (B*H*W, C)のリスト
         """
         # 特徴ベクトルListをtorch.Tensor化
-        embeddings = torch.vstack(embeddings) # (N*H*W, C)
+        features = torch.vstack(features) # (N*H*W, C)
 
         # 貪欲法で特徴ベクトルをサブサンプリングする
         # (N*H*W, C) -> (n_subsample, C)
-        coreset, n = sampler.k_center_greedy(embeddings, sampling_ratio=self.coreset_sampling_ratio, progress=True)
-        print(f"{len(embeddings)} -> {n}")
+        coreset, n = sampler.k_center_greedy(features, sampling_ratio=self.coreset_sampling_ratio, progress=True)
+        print(f"{len(features)} -> {n}")
 
         # サブサンプリングした特徴ベクトルを格納
         self.memory_bank = coreset
@@ -368,22 +372,22 @@ class PatchCore:
         """
 
         # 一番浅いレイヤーの特徴ベクトル
-        embeddings = features[self.layers[0]]
+        concat_features = features[self.layers[0]]
 
         # 後段レイヤーの特徴ベクトルを一番浅いレイヤーの特徴ベクトルサイズに合わせる
         for layer in self.layers[1:]:
-            layer_embedding = features[layer]
-            layer_embedding = F.interpolate(layer_embedding, size=embeddings.shape[-2:], mode="nearest")
-            embeddings = torch.cat((embeddings, layer_embedding), 1)
+            layer_features = features[layer]
+            layer_features = F.interpolate(layer_features, size=concat_features.shape[-2:], mode="nearest")
+            concat_features = torch.cat((concat_features, layer_features), 1)
 
-        return embeddings
+        return concat_features
     
     @staticmethod
-    def _reshape_features(embedding: torch.Tensor) -> torch.Tensor:
+    def _reshape_features(features: torch.Tensor) -> torch.Tensor:
         """特徴ベクトルのリシェイプ
 
         Args:
-            embedding (Tensor): 特徴ベクトル
+            features (Tensor): 特徴ベクトル
 
         Returns:
         
@@ -392,9 +396,8 @@ class PatchCore:
         Note:
             [N, C, H, W] -> [N*H*W, C]
         """
-        embedding_size = embedding.size(1)
-        embedding = embedding.permute(0, 2, 3, 1).reshape(-1, embedding_size)
-        return embedding
+        features = features.permute(0, 2, 3, 1).reshape(-1, features.shape[1])
+        return features
 
 
     def get_transform(self) -> transforms:

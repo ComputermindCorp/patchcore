@@ -6,11 +6,11 @@ device:
 batch_size: 1
 
 train:
-  data_pathes:
+  data_paths:
     - ./data/images/wood/train/OK
 
 val:
-  data_pathes:
+  data_paths:
     - ./data/images/wood/val/OK
     - ./data/images/wood/val/NG
 
@@ -18,7 +18,7 @@ val:
 
 test:
   enable: True
-  data_pathes:
+  data_paths:
   - ./data/images/wood/test/OK
   - ./data/images/wood/test/NG
 
@@ -27,5 +27,5 @@ test:
 save_weights_root_path: ./data/weights/
 
 auto_save_weights_path: True
-save_weights_path_suffix:
+save_weights_path_suffix: wood
 save_weights_filename: 

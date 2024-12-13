@@ -4,17 +4,17 @@ from sklearn import metrics
 import omegaconf
 
 from models.patch_core import PatchCore
-from common.pytorch_custom_dataset import ImagePathes
+from common.pytorch_custom_dataset import ImagePaths
 
 def test(
-        test_loader: ImagePathes,
+        test_loader: ImagePaths,
         weights_path: str,
         device: str,
     ):
     """テストを実行し結果を表示する
 
     Args:
-        test_loader (ImagePathes): テストデータローダー
+        test_loader (ImagePaths): テストデータローダー
         weights_path (str): 重みファイルパス
         device (str): デバイスID
     """
@@ -23,11 +23,11 @@ def test(
     all_preds = []
     all_labes = []
 
-    for i, (x, label, pathes) in enumerate(test_loader):
+    for i, (x, label, paths) in enumerate(test_loader):
         # 推論
         anomaly_score, anomaly_map, result = net.predict(x)
 
-        #print(f"{i} [{pathes[0]}] preds: {anomaly_map} / label: {label[0]}")
+        #print(f"{i} [{paths[0]}] preds: {anomaly_map} / label: {label[0]}")
 
         label = label.tolist()
 
