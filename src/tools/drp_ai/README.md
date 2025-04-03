@@ -13,12 +13,15 @@ wget https://github.com/ComputermindCorp/assets/releases/download/v1.0.0/resnet1
 
 ## create memorybank
 RZ/V2H uses quantized weights. Therefore, when creating memory banks in scripts in this repository, quantized CNN models are used.<br>
-Please refer to [resnet18_quantization_onnx_wood.yaml](../../cfg/train/resnet18_quantization_onnx_wood.yaml) for the configuration yaml during training.
-
+Please refer to [resnet18_quantization_onnx_wood.yaml](../../cfg/train/resnet18_quantization_onnx_wood.yaml) for the configuration yaml during training.<br>
 RZ/V2Hは量子化された重みを使用します。そのため、このリポジトリのスクリプトでメモリバンクを作成する際には、量子化されたCNNモデルを使用します。<br>
 学習の設定yamlは[resnet18_quantization_onnx_wood.yaml](../../cfg/train/resnet18_quantization_onnx_wood.yaml)を参考にしてください。
 
+To change the [coreset sampling ratio](#coreset-sampling-ratio) (above 0.0, below 1.0), Change the "coreset_sampling_ratio" value in [resnet18_quantization_onnx_wood.yaml](../../cfg/train/resnet18_quantization_onnx_wood.yaml).<br>
+また、[コアセットサンプリング比率](#coreset-sampling-ratio)(0.0以上, 1.0以下)の変更は[resnet18_quantization_onnx_wood.yaml](../../cfg/train/resnet18_quantization_onnx_wood.yaml)内の"coreset_sampling_ratio"の数値を変更してください。
+
 ```cfg/train/resnet18_quantization_onnx_wood.yaml
+coreset_sampling_ratio: 0.1
 backborn_id: resnet18_quantization_onnx
 ```
 
